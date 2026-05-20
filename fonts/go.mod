@@ -1,16 +1,13 @@
-module github.com/ha1tch/raycanvas/examples/paths
+module github.com/ha1tch/raycanvas/fonts
 
 go 1.22
 
-require (
-	github.com/gen2brain/raylib-go/raylib v0.60.0
-	github.com/ha1tch/raycanvas v0.0.0
-	github.com/ha1tch/raycanvas/fonts v0.0.0-00010101000000-000000000000
-)
+require github.com/ha1tch/raycanvas v0.0.0
 
 require (
 	github.com/ebitengine/purego v0.10.0 // indirect
 	github.com/fogleman/gg v1.3.0 // indirect
+	github.com/gen2brain/raylib-go/raylib v0.60.0 // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/jupiterrider/ffi v0.7.0 // indirect
 	github.com/srwiley/oksvg v0.0.0-20221011165216-be6e8873101c // indirect
@@ -21,7 +18,4 @@ require (
 	golang.org/x/text v0.3.6 // indirect
 )
 
-replace (
-	github.com/ha1tch/raycanvas => ../../
-	github.com/ha1tch/raycanvas/fonts => ../../fonts
-)
+replace github.com/ha1tch/raycanvas => ../

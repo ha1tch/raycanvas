@@ -54,13 +54,12 @@ mkdir -p "$STAGE/pkg/version"
 cp pkg/version/version.go "$STAGE/pkg/version/"
 
 # Examples
-# Internal packages
-mkdir -p "$STAGE/examples/internal/fonts"
-cp examples/internal/fonts/fonts.go "$STAGE/examples/internal/fonts/"
-cp examples/internal/fonts/go.mod   "$STAGE/examples/internal/fonts/"
-[[ -f examples/internal/fonts/go.sum ]] && \
-  cp examples/internal/fonts/go.sum "$STAGE/examples/internal/fonts/" || true
-cp examples/internal/fonts/*.ttf    "$STAGE/examples/internal/fonts/"
+# Public fonts package
+mkdir -p "$STAGE/fonts"
+cp fonts/fonts.go "$STAGE/fonts/"
+cp fonts/go.mod   "$STAGE/fonts/"
+[[ -f fonts/go.sum ]] && cp fonts/go.sum "$STAGE/fonts/" || true
+cp fonts/*.ttf    "$STAGE/fonts/"
 
 for ex in examples/*/; do
   ex_name="$(basename "$ex")"

@@ -29,7 +29,7 @@ import (
 
 	rl "github.com/gen2brain/raylib-go/raylib"
 	rc "github.com/ha1tch/raycanvas"
-	"github.com/ha1tch/raycanvas/examples/internal/fonts"
+	"github.com/ha1tch/raycanvas/fonts"
 )
 
 const (

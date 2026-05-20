@@ -5,7 +5,7 @@ go 1.22
 require (
 	github.com/gen2brain/raylib-go/raylib v0.60.0
 	github.com/ha1tch/raycanvas v0.0.0
-	github.com/ha1tch/raycanvas/examples/internal/fonts v0.0.0-00010101000000-000000000000
+	github.com/ha1tch/raycanvas/fonts v0.0.0-00010101000000-000000000000
 )
 
 require (
@@ -23,5 +23,5 @@ require (
 
 replace (
 	github.com/ha1tch/raycanvas => ../../
-	github.com/ha1tch/raycanvas/examples/internal/fonts => ../internal/fonts
+	github.com/ha1tch/raycanvas/fonts => ../../fonts
 )

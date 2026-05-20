@@ -20,9 +20,9 @@ The goal is to let code written against the browser canvas API port to Go with m
 
 ```go
 import (
-    rl  "github.com/gen2brain/raylib-go/raylib"
-    rc  "github.com/ha1tch/raycanvas"
-    "github.com/ha1tch/raycanvas/examples/internal/fonts"
+    rl "github.com/gen2brain/raylib-go/raylib"
+    rc "github.com/ha1tch/raycanvas"
+    "github.com/ha1tch/raycanvas/fonts"
 )
 
 func main() {
@@ -237,18 +237,23 @@ Build and run any example with `make <name>`, or build all with `make build-exam
 | Example | What it demonstrates |
 |---|---|
 | `basic` | `FillRect`, `StrokeRect`, `globalAlpha`, `save`/`restore`, `RoundRect` |
+
+![basic example](images/rc03.png)
 | `text` | Font variants, `MeasureText`, `textAlign`/`textBaseline`, word-wrap |
 | `paths` | `Arc`, `ArcTo`, `LineDash`, nested clip, animated arc sweep |
 | `curves` | `BezierCurveTo` with glow+stroke+pulse pattern |
-| `grid` | Spreadsheet: zoom transform, nested clip, headers, selection | 
-| `zui` | Infinite canvas ZUI: pan/zoom, card drag, drop shadow, four themes | 
-| `shadows` | Drop shadow, coloured glow, text shadow, blur depth | 
+
+![curves example](images/rc02.png)
+| `grid` | Spreadsheet: zoom transform, nested clip, headers, selection |
+| `zui` | Infinite canvas ZUI: pan/zoom, card drag, drop shadow, four themes |
+| `shadows` | Drop shadow, coloured glow, text shadow, blur depth |
+
+![shadows example](images/rc04.png)
+
 | `icons` | SVG icon registration: shevo icons, original icons, light/dark theme comparison |
 
-![basic example](images/rc03.png)
-![curves example](images/rc02.png)
-![shadows example](images/rc04.png)
 ![icons example](images/rc01.png)
+
 ---
 
 ## Known issues and limitations
