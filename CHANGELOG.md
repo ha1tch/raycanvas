@@ -3,6 +3,16 @@
 All notable changes to this project are documented here.
 The top entry always matches the VERSION file and pkg/version/version.go.
 
+## 0.2.4 — 2026-05-20
+
+### Fixed
+
+- **Icons not rendering** (`examples/icons`): oksvg requires spaces between arc flag parameters. The compact SVG arc syntax `a4 4 0 014 4` (valid per spec) was not parsed correctly — `014` is flags 0, 1 followed by coordinate 4, but oksvg needs them written as `0 1 4`. Fixed in: upload, download, undo, redo, anchor, link, edit, bell. Bell body path converted to explicit cubic Bézier (`C`) which oksvg handles reliably.
+- **40px icon row truncated** (`examples/icons`): row cut off at window edge with `break`. Now wraps to a second row.
+- **`make icons` missing from `make help`** (`Makefile`): added.
+
+---
+
 ## 0.2.3 — 2026-05-20
 
 ### Added

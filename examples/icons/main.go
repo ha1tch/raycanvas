@@ -25,7 +25,7 @@ import (
 
 const (
 	W = 1100
-	H = 760
+	H = 770
 )
 
 // ── SVG data ──────────────────────────────────────────────────────────────────
@@ -62,26 +62,26 @@ var svgIcons = map[string][]byte{
 
 	"upload": []byte(`<svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
 		<path d="M7.5 10V2M5 4.5L7.5 2 10 4.5" stroke="white" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-		<path d="M2 11v1.5a1 1 0 001 1h9a1 1 0 001-1V11" stroke="white" stroke-width="1.4" stroke-linecap="round"/>
+		<path d="M2 11v1.5a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1V11" stroke="white" stroke-width="1.4" stroke-linecap="round"/>
 	</svg>`),
 
 	"download": []byte(`<svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
 		<path d="M7.5 1.5v8M5 7l2.5 3L10 7" stroke="white" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-		<path d="M2 11v1.5a1 1 0 001 1h9a1 1 0 001-1V11" stroke="white" stroke-width="1.4" stroke-linecap="round"/>
+		<path d="M2 11v1.5a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1V11" stroke="white" stroke-width="1.4" stroke-linecap="round"/>
 	</svg>`),
 
 	"undo": []byte(`<svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-		<path d="M2.5 5.5h6a4 4 0 010 8H5" stroke="white" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+		<path d="M2.5 5.5h6a4 4 0 0 1 0 8H5" stroke="white" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
 		<path d="M5.5 2.5l-3 3 3 3" stroke="white" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
 	</svg>`),
 
 	"redo": []byte(`<svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-		<path d="M12.5 5.5h-6a4 4 0 000 8H10" stroke="white" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+		<path d="M12.5 5.5h-6a4 4 0 0 0 0 8H10" stroke="white" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
 		<path d="M9.5 2.5l3 3-3 3" stroke="white" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
 	</svg>`),
 
 	"anchor": []byte(`<svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-		<path d="M2 11.5A1.5 1.5 0 003.5 13h8a1.5 1.5 0 000-3H8l-1-4H6l-1 4H3.5A1.5 1.5 0 002 11.5z" stroke="white" stroke-width="1.3" stroke-linejoin="round"/>
+		<path d="M2 11.5A1.5 1.5 0 0 0 3.5 13h8a1.5 1.5 0 0 0 0-3H8l-1-4H6l-1 4H3.5A1.5 1.5 0 0 1 2 11.5z" stroke="white" stroke-width="1.3" stroke-linejoin="round"/>
 		<path d="M7.5 2v5" stroke="white" stroke-width="1.4" stroke-linecap="round"/>
 		<circle cx="7.5" cy="1.5" r="1" fill="white"/>
 	</svg>`),
@@ -94,8 +94,8 @@ var svgIcons = map[string][]byte{
 	</svg>`),
 
 	"link": []byte(`<svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-		<path d="M6.5 8.5a3.5 3.5 0 005 0l2-2a3.536 3.536 0 00-5-5L7.5 2.5" stroke="white" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-		<path d="M8.5 6.5a3.5 3.5 0 00-5 0l-2 2a3.536 3.536 0 005 5L7.5 12.5" stroke="white" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+		<path d="M6.5 8.5a3.5 3.5 0 0 0 5 0l2-2a3.536 3.536 0 0 0-5-5L7.5 2.5" stroke="white" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+		<path d="M8.5 6.5a3.5 3.5 0 0 0-5 0l-2 2a3.536 3.536 0 0 0 5 5L7.5 12.5" stroke="white" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
 	</svg>`),
 
 	"globe": []byte(`<svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -105,7 +105,7 @@ var svgIcons = map[string][]byte{
 	</svg>`),
 
 	"edit": []byte(`<svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-		<path d="M8.5 1.5a1.414 1.414 0 012 2L3.5 10.5l-3 .5.5-3 7.5-6.5z" stroke="white" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+		<path d="M8.5 1.5a1.414 1.414 0 0 1 2 2L3.5 10.5l-3 .5.5-3 7.5-6.5z" stroke="white" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
 	</svg>`),
 
 	// ── Original icons ────────────────────────────────────────────────────
@@ -165,8 +165,8 @@ var svgIcons = map[string][]byte{
 	</svg>`),
 
 	"bell": []byte(`<svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-		<path d="M7.5 1.5a4 4 0 014 4v3l1 2H2.5l1-2v-3a4 4 0 014-4z" stroke="white" stroke-width="1.3" stroke-linejoin="round"/>
-		<path d="M6 11.5a1.5 1.5 0 003 0" stroke="white" stroke-width="1.2"/>
+		<path d="M7.5 1.5 C5.29 1.5 3.5 3.29 3.5 5.5 L3.5 8.5 L2.5 10.5 L12.5 10.5 L11.5 8.5 L11.5 5.5 C11.5 3.29 9.71 1.5 7.5 1.5 Z" stroke="white" stroke-width="1.3" stroke-linejoin="round"/>
+		<path d="M6 11.5 A1.5 1.5 0 0 0 9 11.5" stroke="white" stroke-width="1.2"/>
 	</svg>`),
 
 	"sort": []byte(`<svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -356,48 +356,39 @@ func main() {
 			rc.ParseColor(darkAccent),
 			darkPanel, darkBorder, darkLabel, darkHover)
 
-		// ── Section 3: Large icon showcase (40px, both groups) ───────────
+		// ── Section 3: Large icon showcase (40px, both groups, wrapped) ──
 		sectionHeader(10, 284, "40px — large icon showcase")
 
 		allIcons := append(shevoIcons, originalIcons...)
+		cols := []string{darkTxt, darkHover, darkAccent, "#a6e3a1", "#f38ba8", "#fab387", "#f9e2af"}
 		ix := float32(20)
-		for _, name := range allIcons {
+		iy := float32(300)
+		for idx, name := range allIcons {
 			size := float32(40)
 			ctx.SetFillStyle(darkPanel)
-			ctx.FillRoundRect(ix, 300, 52, 68, 6)
+			ctx.FillRoundRect(ix, iy, 52, 68, 6)
 			ctx.SetStrokeStyle(darkBorder)
 			ctx.SetLineWidth(0.5)
-			ctx.StrokeRoundRect(ix, 300, 52, 68, 6)
-
-			// Alternate accent colours
-			cols := []string{darkTxt, darkHover, darkAccent, "#a6e3a1", "#f38ba8", "#fab387", "#f9e2af"}
-			idx := 0
-			for i, n := range allIcons {
-				if n == name {
-					idx = i
-					break
-				}
-			}
-			ctx.DrawIcon(name, ix+6, 308, size, rc.ParseColor(cols[idx%len(cols)]))
-
+			ctx.StrokeRoundRect(ix, iy, 52, 68, 6)
+			ctx.DrawIcon(name, ix+6, iy+8, size, rc.ParseColor(cols[idx%len(cols)]))
 			ctx.SetFont("7px inter")
 			ctx.SetTextAlign("center")
 			ctx.SetTextBaseline("top")
 			ctx.SetFillStyle(darkLabel)
-			ctx.FillText(name, ix+26, 354)
-
+			ctx.FillText(name, ix+26, iy+54)
 			ix += 56
 			if ix > float32(W-56) {
-				break
+				ix = 20
+				iy += 76
 			}
 		}
 
 		// ── Section 4: Light / Dark theme comparison ──────────────────────
-		sectionHeader(10, 392, "light ↔ dark — same texture, different tint")
+		sectionHeader(10, 474, "light ↔ dark — same texture, different tint")
 
 		half := float32(W-20) / 2
-		panelY := float32(420)
-		panelH := float32(290)
+		panelY := float32(500)
+		panelH := float32(230)
 
 		// Dark panel
 		ctx.SetFillStyle(darkBg)
