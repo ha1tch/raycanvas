@@ -69,6 +69,10 @@ fi
 echo "$VERSION_ARG" > VERSION
 echo "    VERSION: $VERSION_ARG ✓"
 
+# ── Step 2b: Update README version line ──────────────────────────────────────
+sed -i "s/\*\*v[0-9][0-9.]*[^*]* — work in progress\*\*/**v${VERSION_ARG} — work in progress**/" README.md
+echo "    README.md version: $VERSION_ARG ✓"
+
 # ── Step 3: Update pkg/version/version.go ────────────────────────────────────
 VERSION_FILE="pkg/version/version.go"
 cat > "$VERSION_FILE" << GOEOF
@@ -132,6 +136,11 @@ mkdir -p "$STAGE"
 cp VERSION CHANGELOG.md ARCHITECTURE.md README.md Makefile release.sh package.sh \
    go.mod go.sum \
    "$STAGE/"
+
+# Screenshots
+if [ -d images ]; then
+  cp -r images "$STAGE/images"
+fi
 
 # Library source
 cp *.go "$STAGE/"

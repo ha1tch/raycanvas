@@ -1,6 +1,6 @@
 # raycanvas
 
-**v0.2.2 — work in progress**
+**v0.2.4 — work in progress**
 
 A Go package that mirrors the HTML5 `CanvasRenderingContext2D` API, backed by [raylib-go](https://github.com/gen2brain/raylib-go) for GPU rendering and [fogleman/gg](https://github.com/fogleman/gg) for CPU-side precision work (blur, anti-aliased curves, clip masks).
 
@@ -237,12 +237,22 @@ Build and run any example with `make <name>`, or build all with `make build-exam
 | Example | What it demonstrates |
 |---|---|
 | `basic` | `FillRect`, `StrokeRect`, `globalAlpha`, `save`/`restore`, `RoundRect` |
+
+![basic example](images/rc03.png)
 | `text` | Font variants, `MeasureText`, `textAlign`/`textBaseline`, word-wrap |
 | `paths` | `Arc`, `ArcTo`, `LineDash`, nested clip, animated arc sweep |
 | `curves` | `BezierCurveTo` with glow+stroke+pulse pattern |
+
+![curves example](images/rc02.png)
 | `grid` | Spreadsheet: zoom transform, nested clip, headers, selection |
 | `zui` | Infinite canvas ZUI: pan/zoom, card drag, drop shadow, four themes |
 | `shadows` | Drop shadow, coloured glow, text shadow, blur depth |
+
+![shadows example](images/rc04.png)
+
+| `icons` | SVG icon registration: shevo icons, original icons, light/dark theme comparison |
+
+![icons example](images/rc01.png)
 
 ---
 

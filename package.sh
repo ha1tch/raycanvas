@@ -41,6 +41,11 @@ cp VERSION CHANGELOG.md ARCHITECTURE.md README.md Makefile release.sh package.sh
    go.mod go.sum \
    "$STAGE/"
 
+# Screenshots
+if [ -d images ]; then
+  cp -r images "$STAGE/images"
+fi
+
 # Library source
 cp *.go "$STAGE/"
 
