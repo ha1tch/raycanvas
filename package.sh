@@ -37,7 +37,7 @@ STAGE="$TMP_DIR/$ZIP_DIR"
 mkdir -p "$STAGE"
 
 # Library root
-cp VERSION CHANGELOG.md ARCHITECTURE.md Makefile release.sh package.sh \
+cp VERSION CHANGELOG.md ARCHITECTURE.md README.md Makefile release.sh package.sh \
    go.mod go.sum \
    "$STAGE/"
 

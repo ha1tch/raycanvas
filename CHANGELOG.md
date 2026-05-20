@@ -3,6 +3,15 @@
 All notable changes to this project are documented here.
 The top entry always matches the VERSION file and pkg/version/version.go.
 
+## 0.2.3 — 2026-05-20
+
+### Added
+
+- **`icons` example** (`examples/icons`): demonstrates the SVG icon pipeline across four sections. (1) Shevo icons — the actual SVGs from joxel/quag/dekk shell files (chevron, align, upload, download, undo, redo, anchor, layout, link, globe, edit), rendered at 14px and 24px. (2) Original icons in the same geometric style (search, filter, settings, copy, trash, check, close, pin, tag, expand, collapse, star, bell, sort). (3) 40px showcase of all icons with per-icon accent tinting. (4) Light/Dark panel comparison — same registered textures, different tints, showing toolbar simulation and labelled button rows in both themes.
+- **`ParseColor(css string) color.RGBA`** — public CSS colour parser for use outside a `Context`, e.g. when constructing tint arguments for `DrawIcon`.
+
+---
+
 ## 0.2.2 — 2026-05-19
 
 ### Fixed

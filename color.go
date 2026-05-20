@@ -7,6 +7,13 @@ import (
 	"strings"
 )
 
+// ParseColor parses a CSS color string and returns color.RGBA.
+// This is the public version of resolveColor for use outside a Context —
+// useful when passing colours to DrawIcon or other calls that take color.RGBA directly.
+func ParseColor(css string) color.RGBA {
+	return parseColor(css)
+}
+
 // resolveColor parses a CSS color string and returns color.RGBA.
 // Results are cached in the SharedCache — parsing happens only once per
 // unique string across the lifetime of the application.

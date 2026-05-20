@@ -3,7 +3,7 @@
 MODULE   := github.com/ha1tch/raycanvas
 BIN      := bin
 GOFLAGS  := -v
-EXAMPLES := basic text paths curves grid zui shadows
+EXAMPLES := basic text paths curves grid zui shadows icons
 
 .PHONY: help build build-examples lint clean fmt version release patch package $(EXAMPLES)
 
@@ -71,6 +71,9 @@ zui: $(BIN)/zui
 
 shadows: $(BIN)/shadows
 	./$(BIN)/shadows
+
+icons: $(BIN)/icons
+	./$(BIN)/icons
 
 # ── Quality ───────────────────────────────────────────────────────────────────
 lint:
