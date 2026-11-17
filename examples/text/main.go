@@ -13,8 +13,8 @@ import (
 	"strings"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
-	"github.com/ha1tch/raycanvas/fonts"
 	rc "github.com/ha1tch/raycanvas"
+	"github.com/ha1tch/raycanvas/fonts"
 )
 
 const (

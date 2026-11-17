@@ -225,9 +225,13 @@ Intersection math in `float32`; cast to `int32` only at `rl.BeginScissorMode` ca
 
 ### Rounded-rect clip
 
-Uses a corner overdraw technique: content is drawn normally inside the scissor bounding box, then four quarter-circle caps in the background colour are painted over the corners on `Restore()`. Call `SetMaskBackground(css)` before the clip if the background is not the current fill style.
+Uses a corner overdraw technique: content is drawn normally inside the scissor bounding box, then on `Restore()` each corner is painted over in the background colour: the part of the corner square that lies outside the quarter circle. The clip's screen rectangle, radius and colour are fixed when `Clip()` is called (the colour is `SetMaskBackground` if set, otherwise the fill style at that moment) and kept in the clip state, one entry per rounded clip, so nested clips each close at their own level.
 
-**Limitation:** requires a solid known background colour. Semi-transparent backgrounds produce artefacts. True GPU alpha masking is a planned improvement.
+**Limitation:** requires a solid known background colour. Where there is none, round the geometry instead: `DrawImageRounded` for a texture, `DrawImageOffscreenRounded` for content drawn to an off-screen context. Those are triangle meshes whose vertices carry texture coordinates (`mesh.go`); nothing is drawn outside the corners.
+
+### Soft edges
+
+`SetAntialias(true)` gives the rounded meshes a one-pixel band along the edge in which alpha runs from full to nothing. It needs no multisampling and no shader. The rounded fill, the rounded stroke, the rounded image and the corner caps of a rounded clip all use it.
 
 ---
 
@@ -268,11 +272,9 @@ The path buffer accumulates segments. At `Fill()` or `Stroke()` time, the buffer
 | `bezierCurveTo` | tessellate → `DrawTriangleFan` | gg cached texture |
 | multi-segment | tessellate → `DrawTriangleFan` | `DrawSplineLinear` per sub-path |
 
-### Fill winding
+### Fill
 
-`DrawTriangleFan` requires CCW winding in screen coordinates (Y-down). Tessellated points are in increasing-angle order (CW in screen), so the perimeter is reversed before fan construction. The centroid is prepended as the explicit fan centre.
-
-**Limitation:** non-convex polygons may render incorrectly. Ear-clipping triangulation is not yet implemented.
+Each sub-path is cut into triangles by ear clipping (`triangulate.go`) and drawn as one batch. Either winding is accepted. Holes and outlines that cross themselves are not handled.
 
 ### Stroke sub-paths
 
@@ -350,7 +352,7 @@ Backed by `rl.LoadRenderTexture(width, height)`. Draw into it between `BeginFram
 SharedCache
   colors      map[string]color.RGBA        cap: 256,  FIFO, no GPU resource
   fonts       map[FontKey]rl.Font          unbounded, registered at startup
-  shadows     map[string]rl.Texture2D      cap: 1024, FIFO, no UnloadTexture on eviction
+  shadows     map[string]rl.Texture2D      cap: 1024, FIFO, evicted textures freed at the next BeginFrame
   icons       map[iconKey]rl.Texture2D     unbounded, registered at startup
   maskImages  map[string]*image.RGBA       unbounded, CPU-side, roundRect clip masks
 ```
@@ -371,7 +373,7 @@ All methods are safe for concurrent use during asset loading. Frame-loop access 
 - **Font atlas baked at fixed size** — `DrawTextEx` with `fontSize != font.BaseSize` causes bilinear scaling. Always bake at exact sizes needed.
 - **`color.RGBA` alpha is uint8** — when applying `globalAlpha`, multiply: `a = uint8(float32(color.A) * globalAlpha)`.
 - **No weight synthesis** — bold/italic require separate TTF files loaded as separate `rl.Font` values.
-- **`DrawTriangleFan` winding** — requires CCW in screen coordinates. Perimeter points must be reversed before passing to the fan.
+- **Triangle winding** — raylib culls triangles that are not counter-clockwise on screen. The mesh routines keep outlines clockwise and emit each triangle reversed.
 
 ### gg specific
 
@@ -383,4 +385,4 @@ All methods are safe for concurrent use during asset loading. Frame-loop access 
 - **Font spacing = 0** always — consistent between `MeasureTextEx` and `DrawTextEx`.
 - **`MeasureText()` returns width only** — exposed as `float32` (`.X` of `MeasureTextEx` result).
 - **SVG arc flags need spaces** — oksvg does not parse compact arc flag syntax. Use explicit spaces between flag parameters.
-- **Shadow cache eviction does not free VRAM** — by design; freeing GPU IDs causes stale reference artifacts.
+- **Shadow cache eviction frees VRAM one frame late** — a texture evicted during a frame is freed when the next frame begins, so nothing drawn in the same frame can be holding its ID.

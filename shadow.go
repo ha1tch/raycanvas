@@ -192,8 +192,8 @@ func buildBezierTexture(p0, cp1, cp2, p1 rl.Vector2, lineWidth float32) (rl.Text
 	maxX := max4(p0.X, cp1.X, cp2.X, p1.X) + pad
 	maxY := max4(p0.Y, cp1.Y, cp2.Y, p1.Y) + pad
 
-	imgW := int(maxX-minX+1)
-	imgH := int(maxY-minY+1)
+	imgW := int(maxX - minX + 1)
+	imgH := int(maxY - minY + 1)
 	if imgW < 1 {
 		imgW = 1
 	}

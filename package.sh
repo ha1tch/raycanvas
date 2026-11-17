@@ -37,7 +37,7 @@ STAGE="$TMP_DIR/$ZIP_DIR"
 mkdir -p "$STAGE"
 
 # Library root
-cp VERSION CHANGELOG.md ARCHITECTURE.md README.md Makefile release.sh package.sh \
+cp VERSION CHANGELOG.md README.md LICENSE .gitignore Makefile release.sh package.sh \
    go.mod go.sum \
    "$STAGE/"
 
@@ -45,6 +45,9 @@ cp VERSION CHANGELOG.md ARCHITECTURE.md README.md Makefile release.sh package.sh
 if [ -d images ]; then
   cp -r images "$STAGE/images"
 fi
+
+# Documentation
+cp -r docs "$STAGE/docs"
 
 # Library source
 cp *.go "$STAGE/"
@@ -60,6 +63,10 @@ cp fonts/fonts.go "$STAGE/fonts/"
 cp fonts/go.mod   "$STAGE/fonts/"
 [[ -f fonts/go.sum ]] && cp fonts/go.sum "$STAGE/fonts/" || true
 cp fonts/*.ttf    "$STAGE/fonts/"
+
+# The examples' own copy of the fonts
+mkdir -p "$STAGE/examples"
+cp -r examples/internal "$STAGE/examples/internal"
 
 for ex in examples/*/; do
   ex_name="$(basename "$ex")"

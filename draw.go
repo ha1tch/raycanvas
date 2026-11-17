@@ -52,8 +52,8 @@ func (c *Context) StrokeRoundRect(x, y, w, h, r float32) {
 // a card body. Equivalent to a rounded rect with the bottom squared off.
 // Implemented as two stacked raylib calls to avoid path tessellation.
 func (c *Context) FillRoundRectTop(x, y, w, h, r float32) {
-	c.FillRoundRect(x, y, w, h, r)         // full rounded rect gives top corners
-	c.FillRect(x, y+r, w, h-r)             // square off everything below corner radius
+	c.FillRoundRect(x, y, w, h, r) // full rounded rect gives top corners
+	c.FillRect(x, y+r, w, h-r)     // square off everything below corner radius
 }
 
 // StrokeRoundRectTop strokes a rectangle rounded only at the top two corners.
@@ -186,6 +186,10 @@ func (c *Context) fillPath() {
 		case segRoundRect:
 			tx, ty := m.transformPoint(s.x, s.y)
 			sw, sh := s.x2*m.a, s.y2*m.d
+			if c.antialias {
+				c.fillRoundMesh(rl.Rectangle{X: tx, Y: ty, Width: sw, Height: sh}, s.r*m.a, meshPaint{col: col})
+				return
+			}
 			rn := roundnessFromRadius(s.r*m.a, sw, sh)
 			rl.DrawRectangleRounded(rl.Rectangle{
 				X: tx, Y: ty, Width: sw, Height: sh,
@@ -203,29 +207,16 @@ func (c *Context) fillPath() {
 		}
 	}
 
-	pts := c.tessellateFlat()
-	if len(pts) < 3 {
-		return
+	// Each sub-path is cut into triangles on its own, so an outline with
+	// notches (an L, a U, an arrow) is filled as drawn and two shapes in
+	// one path do not get joined. Holes and outlines that cross themselves
+	// are not handled: see triangulate.
+	paint := meshPaint{col: c.fillColor()}
+	for _, pts := range c.tessellate() {
+		if tris := triangulate(pts); len(tris) > 0 {
+			fillTriangles(tris, paint)
+		}
 	}
-	// DrawTriangleFan requires points in CCW order in screen coordinates (Y-down).
-	// Our tessellation generates points in increasing-angle order, which is CW
-	// in screen coords. Reverse the perimeter points so they are CCW in screen
-	// coords, then prepend the centroid as the fan centre.
-	for i, j := 0, len(pts)-1; i < j; i, j = i+1, j-1 {
-		pts[i], pts[j] = pts[j], pts[i]
-	}
-	var cx, cy float32
-	for _, p := range pts {
-		cx += p.X
-		cy += p.Y
-	}
-	cx /= float32(len(pts))
-	cy /= float32(len(pts))
-	fan := make([]rl.Vector2, 0, len(pts)+2)
-	fan = append(fan, rl.Vector2{X: cx, Y: cy})
-	fan = append(fan, pts...)
-	fan = append(fan, pts[0]) // close fan
-	rl.DrawTriangleFan(fan, c.fillColor())
 }
 
 // strokePath dispatches the current path to the appropriate raylib stroke call.
@@ -249,6 +240,10 @@ func (c *Context) strokePath() {
 		case segRoundRect:
 			tx, ty := m.transformPoint(s.x, s.y)
 			sw, sh := s.x2*m.a, s.y2*m.d
+			if c.antialias {
+				c.strokeRoundMesh(rl.Rectangle{X: tx, Y: ty, Width: sw, Height: sh}, s.r*m.a, lw, col)
+				return
+			}
 			rn := roundnessFromRadius(s.r*m.a, sw, sh)
 			rl.DrawRectangleRoundedLinesEx(rl.Rectangle{
 				X: tx, Y: ty, Width: sw, Height: sh,
@@ -270,7 +265,7 @@ func (c *Context) strokePath() {
 			// Partial arc: DrawRing over the swept angle range.
 			// DrawRing angles are in degrees; canvas uses radians.
 			start := s.x2 * (180 / math.Pi)
-			end   := s.y2 * (180 / math.Pi)
+			end := s.y2 * (180 / math.Pi)
 			if s.anticlockwise {
 				start, end = end, start
 			}
@@ -300,10 +295,10 @@ func (c *Context) strokePath() {
 					break
 				}
 			}
-			p0  := rl.Vector2{X: m.a*p0x + m.e, Y: m.d*p0y + m.f}
-			cp1 := rl.Vector2{X: m.a*s.x + m.e,  Y: m.d*s.y + m.f}
+			p0 := rl.Vector2{X: m.a*p0x + m.e, Y: m.d*p0y + m.f}
+			cp1 := rl.Vector2{X: m.a*s.x + m.e, Y: m.d*s.y + m.f}
 			cp2 := rl.Vector2{X: m.a*s.x2 + m.e, Y: m.d*s.y2 + m.f}
-			p1  := rl.Vector2{X: m.a*s.x3 + m.e, Y: m.d*s.y3 + m.f}
+			p1 := rl.Vector2{X: m.a*s.x3 + m.e, Y: m.d*s.y3 + m.f}
 			cacheKey := bezierCacheKey(p0, cp1, cp2, p1, lw)
 			tex, ok := c.cache.lookupShadow(cacheKey)
 			var origin rl.Vector2
@@ -375,6 +370,9 @@ func (c *Context) strokeDashed(pts []rl.Vector2) {
 		dx := pts[i].X - pts[i-1].X
 		dy := pts[i].Y - pts[i-1].Y
 		segLen := float32(math.Sqrt(float64(dx*dx + dy*dy)))
+		if segLen == 0 {
+			continue // a repeated point has no direction to step along
+		}
 		ux, uy := dx/segLen, dy/segLen
 		pos := float32(0)
 

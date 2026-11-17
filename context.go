@@ -36,7 +36,9 @@ type Context struct {
 	// maskBgColor is the background colour used for roundRect corner overdraw.
 	// Set this before a roundRect Clip() call. Defaults to the window background.
 	maskBgColor color.RGBA
-	maskedRR    roundRectParams
+
+	// antialias turns on the soft edge of rounded meshes. See SetAntialias.
+	antialias bool
 }
 
 // canvasState is the complete drawing state saved and restored by Save/Restore.
@@ -192,6 +194,7 @@ func (c *Context) BeginFrame() {
 	} else {
 		rl.BeginDrawing()
 	}
+	c.cache.collect()
 	rl.EnableSmoothLines()
 }
 
@@ -228,9 +231,12 @@ func (c *Context) Restore() {
 	if len(c.stack) == 0 {
 		return
 	}
-	// If a roundRect mask was active at this save level, apply corner overdraw.
-	if c.state.clip.hasMask {
-		c.applyRoundRectCornerOverdrawBg(c.autoMaskBackground())
+	// Close the rounded clips opened since the matching Save, innermost
+	// first. A clip the saved state already had stays open: it belongs to
+	// an outer level and is closed when that level is restored.
+	saved := c.stack[len(c.stack)-1]
+	for i := len(c.state.clip.rounds) - 1; i >= len(saved.clip.rounds); i-- {
+		c.closeRoundClip(c.state.clip.rounds[i])
 	}
 	c.state = c.stack[len(c.stack)-1]
 	c.stack = c.stack[:len(c.stack)-1]
@@ -378,6 +384,7 @@ func (c *Context) SetImageSmoothingEnabled(b bool) {
 // --- Effective colour helpers ------------------------------------------------
 
 // autoMaskBackground returns the colour to use for roundRect corner overdraw.
+// Clip calls it, so the colour is the one in force when the clip is opened.
 // Prefers an explicitly set maskBgColor; falls back to the current fill style,
 // which is typically the card background at the time Clip() is called — making
 // SetMaskBackground optional for the common case where the fill style is already

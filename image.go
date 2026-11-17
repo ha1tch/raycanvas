@@ -13,7 +13,7 @@ func (c *Context) DrawImage(src rl.Texture2D, dx, dy float32) {
 		filter = rl.FilterPoint
 	}
 	rl.SetTextureFilter(src, filter)
-	rl.DrawTextureV(src, rl.Vector2{X: tx, Y: ty}, rl.White)
+	rl.DrawTextureV(src, rl.Vector2{X: tx, Y: ty}, c.imageTint())
 }
 
 // DrawImageScaled draws an entire texture scaled to fill dst.
@@ -40,7 +40,7 @@ func (c *Context) DrawImageScaled(src rl.Texture2D, dst rl.Rectangle) {
 		rl.Rectangle{X: tx, Y: ty, Width: sw, Height: sh},
 		rl.Vector2{},
 		0,
-		rl.White,
+		c.imageTint(),
 	)
 }
 
@@ -70,7 +70,7 @@ func (c *Context) DrawImageCropped(src rl.Texture2D, srcRect, dst rl.Rectangle) 
 		rl.Rectangle{X: tx, Y: ty, Width: sw, Height: sh},
 		rl.Vector2{},
 		0,
-		rl.White,
+		c.imageTint(),
 	)
 }
 

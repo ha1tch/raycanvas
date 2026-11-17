@@ -4,14 +4,17 @@
 // icons are uploaded as white-on-transparent Texture2D, tinted at draw time.
 //
 // Section 1 — Shevo icons: the actual SVG icons from joxel/quag/dekk,
-//             rendered at 14px and 28px.
+//
+//	rendered at 14px and 28px.
 //
 // Section 2 — Original icons: new icons in the same geometric style,
-//             demonstrating a broader vocabulary.
+//
+//	demonstrating a broader vocabulary.
 //
 // Section 3 — Light / Dark: both sections side by side, showing how
-//             a single registered texture produces correct output in
-//             any colour scheme by changing only the tint.
+//
+//	a single registered texture produces correct output in
+//	any colour scheme by changing only the tint.
 package main
 
 import (
@@ -217,21 +220,20 @@ func main() {
 	}
 
 	// Dark theme colours (kaputccino)
-	darkBg      := "#0f0f17"
-	darkPanel   := "#1e1e2e"
-	darkBorder  := "#313244"
-	darkLabel   := "#6c7086"
-	darkAccent  := "#cba6f7"
-	darkTxt     := "#cdd6f4"
-	darkHover   := "#89b4fa"
+	darkBg := "#0f0f17"
+	darkPanel := "#1e1e2e"
+	darkBorder := "#313244"
+	darkLabel := "#6c7086"
+	darkAccent := "#cba6f7"
+	darkTxt := "#cdd6f4"
+	darkHover := "#89b4fa"
 
 	// Light theme colours
-	lightBg     := "#f0f0f4"
-	lightPanel  := "#ffffff"
+	lightBg := "#f0f0f4"
+	lightPanel := "#ffffff"
 	lightBorder := "rgba(0,0,0,0.10)"
-	lightLabel  := "#9090a0"
-	lightTxt    := "#2d2d2d"
-
+	lightLabel := "#9090a0"
+	lightTxt := "#2d2d2d"
 
 	// Hover tracking
 	var hoverIcon string

@@ -5,20 +5,21 @@
 // drop shadow, and the four Quag themes (Kaputccino, Light, Polykai, Dark).
 //
 // Controls:
-//   Pan        — middle-mouse drag, or space+drag
-//   Zoom       — scroll wheel (anchored to cursor)
-//   Drag card  — drag title bar
-//   Focus card — click anywhere on card
-//   Cycle theme — T key
-//   New card    — N key (places at cursor)
-//   Close card  — click × button (appears on hover)
+//
+//	Pan        — middle-mouse drag, or space+drag
+//	Zoom       — scroll wheel (anchored to cursor)
+//	Drag card  — drag title bar
+//	Focus card — click anywhere on card
+//	Cycle theme — T key
+//	New card    — N key (places at cursor)
+//	Close card  — click × button (appears on hover)
 //
 // Faithfulness notes:
 //   - Theme colour tables match quag/src/constants.js exactly
 //   - Grid: fine grid (40wu) fades in above zoom 0.22; major (200wu) always visible
 //   - Card: DW=330 DH=230 TH=28 PAD=13 CL_X=13 CL_R=4, r=9
 //   - Buttons: close (right slot 0), minimise (right slot 1),
-//              mode/wrap (left slots 0,1) — colour animated by btnColorAlpha
+//     mode/wrap (left slots 0,1) — colour animated by btnColorAlpha
 //   - Shadow: shadowBlur 12 unfocused, 28 focused
 //   - w2s / s2w: wx*zoom+pan.x, (sx-pan.x)/zoom
 package main
@@ -37,16 +38,16 @@ const (
 	H = 800
 
 	// Card constants — from quag/src/constants.js
-	DW      = 330  // default card width (world units)
-	DH      = 230  // default card height (world units)
-	TH      = 28   // title bar height
-	PAD     = 13   // content padding
-	SBW     = 5    // scrollbar width
-	CL_X    = 13   // button centre x from edge
-	CL_R    = 4    // button circle radius
-	LH      = 20   // line height
-	FSZ     = 13   // font size
-	MINI_SZ = 60   // minimised card size
+	DW      = 330 // default card width (world units)
+	DH      = 230 // default card height (world units)
+	TH      = 28  // title bar height
+	PAD     = 13  // content padding
+	SBW     = 5   // scrollbar width
+	CL_X    = 13  // button centre x from edge
+	CL_R    = 4   // button circle radius
+	LH      = 20  // line height
+	FSZ     = 13  // font size
+	MINI_SZ = 60  // minimised card size
 
 	gridBase  = 40  // fine grid world units
 	gridMajor = 200 // major grid world units
@@ -59,61 +60,61 @@ type theme struct {
 	// Canvas
 	bg, gridFine, gridMajor, cardShadow string
 	// Card chrome
-	card, border, borderFoc, title, titleSep string
+	card, border, borderFoc, title, titleSep             string
 	dragDot, closeCol, minBtn, modeOff, wrapBtn, btnMono string
 	// Text
 	txt, dim, dimMid string
 	// Heading colours (for content preview)
-	h1, h2, h3 string
+	h1, h2, h3   string
 	code, codeBg string
 }
 
 var themes = []theme{
 	{
-		name:      "kaputccino",
-		bg:        "#0f0f17", gridFine: "#1e1e30", gridMajor: "#222236",
+		name: "kaputccino",
+		bg:   "#0f0f17", gridFine: "#1e1e30", gridMajor: "#222236",
 		cardShadow: "rgba(0,0,0,0.55)",
-		card:      "#1e1e2e", border: "#313244", borderFoc: "#cba6f7",
+		card:       "#1e1e2e", border: "#313244", borderFoc: "#cba6f7",
 		title: "#181825", titleSep: "#252538",
-		dragDot:  "#45475a", closeCol: "#f38ba8", minBtn: "#f9e2af",
-		modeOff:  "#89b4fa", wrapBtn: "#a6e3a1", btnMono: "#3d3d52",
-		txt:      "#cdd6f4", dim: "#585b70", dimMid: "#6c7086",
+		dragDot: "#45475a", closeCol: "#f38ba8", minBtn: "#f9e2af",
+		modeOff: "#89b4fa", wrapBtn: "#a6e3a1", btnMono: "#3d3d52",
+		txt: "#cdd6f4", dim: "#585b70", dimMid: "#6c7086",
 		h1: "#f38ba8", h2: "#fab387", h3: "#f9e2af",
 		code: "#f38ba8", codeBg: "rgba(17,17,27,0.85)",
 	},
 	{
-		name:      "light",
-		bg:        "#e8e8e2", gridFine: "#d0d0c8", gridMajor: "#b8b8b0",
+		name: "light",
+		bg:   "#e8e8e2", gridFine: "#d0d0c8", gridMajor: "#b8b8b0",
 		cardShadow: "rgba(0,0,0,0.12)",
-		card:      "#ffffff", border: "#c8c8c0", borderFoc: "#7232c8",
+		card:       "#ffffff", border: "#c8c8c0", borderFoc: "#7232c8",
 		title: "#f0f0eb", titleSep: "#d8d8d0",
-		dragDot:  "#b0b0a8", closeCol: "#d42050", minBtn: "#c05000",
-		modeOff:  "#0055d4", wrapBtn: "#0a8a2e", btnMono: "#d0d0c8",
-		txt:      "#2d2d2d", dim: "#7a7a72", dimMid: "#9a9a92",
+		dragDot: "#b0b0a8", closeCol: "#d42050", minBtn: "#c05000",
+		modeOff: "#0055d4", wrapBtn: "#0a8a2e", btnMono: "#d0d0c8",
+		txt: "#2d2d2d", dim: "#7a7a72", dimMid: "#9a9a92",
 		h1: "#d42050", h2: "#c05000", h3: "#0055d4",
 		code: "#d42050", codeBg: "rgba(0,0,0,0.05)",
 	},
 	{
-		name:      "polykai",
-		bg:        "#1c1e1a", gridFine: "#2f3128", gridMajor: "#3e4035",
+		name: "polykai",
+		bg:   "#1c1e1a", gridFine: "#2f3128", gridMajor: "#3e4035",
 		cardShadow: "rgba(0,0,0,0.6)",
-		card:      "#272822", border: "#3e4035", borderFoc: "#f92672",
+		card:       "#272822", border: "#3e4035", borderFoc: "#f92672",
 		title: "#1c1e1a", titleSep: "#3e4035",
-		dragDot:  "#75715e", closeCol: "#f92672", minBtn: "#e6db74",
-		modeOff:  "#66d9ef", wrapBtn: "#a6e22e", btnMono: "#3e4035",
-		txt:      "#f8f8f2", dim: "#75715e", dimMid: "#90908a",
+		dragDot: "#75715e", closeCol: "#f92672", minBtn: "#e6db74",
+		modeOff: "#66d9ef", wrapBtn: "#a6e22e", btnMono: "#3e4035",
+		txt: "#f8f8f2", dim: "#75715e", dimMid: "#90908a",
 		h1: "#f92672", h2: "#fd971f", h3: "#e6db74",
 		code: "#f92672", codeBg: "rgba(0,0,0,0.3)",
 	},
 	{
-		name:      "dark",
-		bg:        "#08080f", gridFine: "#12121c", gridMajor: "#1a1a28",
+		name: "dark",
+		bg:   "#08080f", gridFine: "#12121c", gridMajor: "#1a1a28",
 		cardShadow: "rgba(0,0,0,0.7)",
-		card:      "#0e0e18", border: "#1a1a28", borderFoc: "#00d4ff",
+		card:       "#0e0e18", border: "#1a1a28", borderFoc: "#00d4ff",
 		title: "#0a0a14", titleSep: "#1a1a28",
-		dragDot:  "#303040", closeCol: "#ff2d8b", minBtn: "#00d4ff",
-		modeOff:  "#00d4ff", wrapBtn: "#ff2d8b", btnMono: "#1a1a28",
-		txt:      "#b0b0c0", dim: "#404050", dimMid: "#505060",
+		dragDot: "#303040", closeCol: "#ff2d8b", minBtn: "#00d4ff",
+		modeOff: "#00d4ff", wrapBtn: "#ff2d8b", btnMono: "#1a1a28",
+		txt: "#b0b0c0", dim: "#404050", dimMid: "#505060",
 		h1: "#00d4ff", h2: "#ff2d8b", h3: "#00d4ff",
 		code: "#ff2d8b", codeBg: "rgba(0,0,0,0.4)",
 	},
@@ -130,23 +131,23 @@ const (
 )
 
 type card struct {
-	id            int
-	x, y          float32 // world position
-	w, h          float32 // world size
-	title         string
-	lines         []string
-	mode          cardMode
-	scroll        float32
-	focused       bool
-	minimised     bool
-	miniX, miniY  float32
-	wrapOn        bool
-	btnColorAlpha float32 // 0=mono, 1=colour (animates on hover)
+	id             int
+	x, y           float32 // world position
+	w, h           float32 // world size
+	title          string
+	lines          []string
+	mode           cardMode
+	scroll         float32
+	focused        bool
+	minimised      bool
+	miniX, miniY   float32
+	wrapOn         bool
+	btnColorAlpha  float32 // 0=mono, 1=colour (animates on hover)
 	btnColorTarget float32
 	// Drag state (screen space)
-	dragging      bool
-	dragOffX      float32
-	dragOffY      float32
+	dragging bool
+	dragOffX float32
+	dragOffY float32
 }
 
 var (
@@ -417,7 +418,7 @@ func drawCardButtons(ctx *rc.Context, c *card, cw, bca float32) {
 		col    string
 		active bool
 	}{
-		{lerpColor(T.btnMono, T.modeOff, bca), false},  // mode
+		{lerpColor(T.btnMono, T.modeOff, bca), false},    // mode
 		{lerpColor(T.btnMono, T.wrapBtn, bca), c.wrapOn}, // wrap
 	}
 	for i, btn := range leftSlots {
@@ -436,8 +437,8 @@ func drawCardButtons(ctx *rc.Context, c *card, cw, bca float32) {
 		col string
 		vis float32
 	}{
-		{lerpColor(T.btnMono, T.closeCol, bca), bca},         // close
-		{lerpColor(T.btnMono, T.minBtn, bca), 1},              // minimise
+		{lerpColor(T.btnMono, T.closeCol, bca), bca}, // close
+		{lerpColor(T.btnMono, T.minBtn, bca), 1},     // minimise
 	}
 	for i, btn := range rightSlots {
 		if btn.vis < 0.005 {

@@ -5,7 +5,7 @@ BIN      := bin
 GOFLAGS  := -v
 EXAMPLES := basic text paths curves grid zui shadows icons
 
-.PHONY: help build build-examples lint clean fmt version release patch package $(EXAMPLES)
+.PHONY: help build build-examples lint clean fmt fmt-check test version release patch package $(EXAMPLES)
 
 # ── Help (default target) ─────────────────────────────────────────────────────
 help:
@@ -27,6 +27,8 @@ help:
 	@echo "Quality"
 	@echo "  make lint                     go vet on library and all examples"
 	@echo "  make fmt                      gofmt -w on all .go files"
+	@echo "  make fmt-check                Fail if any .go file is not gofmt-clean"
+	@echo "  make test                     Run the tests (drawing tests need a display)"
 	@echo ""
 	@echo "Versioning"
 	@echo "  make version                  Print current version"
@@ -85,6 +87,18 @@ lint:
 
 fmt:
 	gofmt -w $(shell find . -name '*.go' -not -path './vendor/*')
+
+# The formatter of the Go that builds the module, not whichever gofmt is
+# first on the PATH: an older one disagrees about newer syntax.
+fmt-check:
+	@out="$$("$$(go env GOROOT)/bin/gofmt" -l $(shell find . -name '*.go' -not -path './vendor/*'))"; \
+	if [ -n "$$out" ]; then echo "not gofmt-clean:"; echo "$$out"; exit 1; fi; \
+	echo "gofmt: clean"
+
+# The drawing tests open a hidden window and read pixels back; without a
+# display they are skipped and only the pure tests run.
+test:
+	go test -count=1 .
 
 # ── Versioning ────────────────────────────────────────────────────────────────
 version:

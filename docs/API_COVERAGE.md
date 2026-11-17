@@ -38,9 +38,9 @@
 | `rect()` | ✓ | |
 | `roundRect()` | ✓ | |
 | `ellipse()` | ✗ | not implemented |
-| `fill()` | ✓ | convex / star-convex only |
+| `fill()` | ✓ | each sub-path ear-clipped; no holes, no self-crossing outlines |
 | `stroke()` | ✓ | |
-| `clip()` | ✓ | rect: scissor; roundRect: corner overdraw |
+| `clip()` | ✓ | rect: scissor; roundRect: corner overdraw over a solid colour |
 | `isPointInPath()` | ✗ | not implemented |
 | `isPointInStroke()` | ✗ | not implemented |
 | `save()` | ✓ | |
@@ -64,4 +64,4 @@
 | `getLineDash()` | ✗ | not implemented |
 
 **Additional raycanvas primitives** not in the canvas API but useful for GPU dispatch:
-`FillRoundRect`, `StrokeRoundRect`, `FillRoundRectTop`, `StrokeRoundRectTop`, `FillCircle`, `StrokeCircle`, `DrawIcon`, `RegisterIcon`, `RegisterFont`.
+`FillRoundRect`, `StrokeRoundRect`, `FillRoundRectTop`, `StrokeRoundRectTop`, `FillCircle`, `StrokeCircle`, `FillRoundRectGradient`, `StrokeRoundRectGradient`, `DrawImageRounded`, `DrawImageRoundedCropped`, `DrawImageOffscreenRounded`, `SetAntialias`, `SetFillColor`, `SetStrokeColor`, `SetMaskBackgroundColor`, `DrawIcon`, `RegisterIcon`, `RegisterFont`.

@@ -36,6 +36,11 @@ type SharedCache struct {
 	shadows     map[string]rl.Texture2D // shadow + bezier textures
 	shadowQueue []string                // FIFO eviction queue for shadows
 
+	// retired holds textures that have left the shadow cache and are waiting
+	// to be freed; freed counts those that have been. See collect.
+	retired []rl.Texture2D
+	freed   int
+
 	icons      map[iconKey]rl.Texture2D
 	maskImages map[string]*image.RGBA
 }
@@ -67,6 +72,10 @@ func (sc *SharedCache) Unload() {
 	for _, t := range sc.icons {
 		rl.UnloadTexture(t)
 	}
+	for _, t := range sc.retired {
+		rl.UnloadTexture(t)
+	}
+	sc.retired = sc.retired[:0]
 	sc.fonts = make(map[FontKey]rl.Font)
 	sc.shadows = make(map[string]rl.Texture2D, ShadowCacheMax)
 	sc.shadowQueue = sc.shadowQueue[:0]
@@ -138,24 +147,42 @@ func (sc *SharedCache) lookupShadow(key string) (rl.Texture2D, bool) {
 func (sc *SharedCache) storeShadow(key string, t rl.Texture2D) {
 	sc.mu.Lock()
 	defer sc.mu.Unlock()
-	if _, exists := sc.shadows[key]; exists {
+	if old, exists := sc.shadows[key]; exists {
 		// Update in place without touching the eviction queue.
+		if old.ID != t.ID {
+			sc.retired = append(sc.retired, old)
+		}
 		sc.shadows[key] = t
 		return
 	}
 	if len(sc.shadowQueue) >= ShadowCacheMax {
-		// Evict oldest — remove from map but do NOT call UnloadTexture.
-		// Calling UnloadTexture frees the GPU ID; raylib may reuse that ID
-		// for the next texture upload, causing any code that still holds the
-		// old ID to draw the wrong texture (visible as a colour flash).
-		// Shadow textures are small (typically <50KB each); the VRAM cost of
-		// not freeing them is acceptable.
+		// Evict the oldest. Its texture is not freed here: a draw later in
+		// this frame may have looked it up already, and a freed ID can be
+		// handed straight to the next upload, which would then be drawn in
+		// its place. It is retired instead and freed by collect at the
+		// start of the next frame, when nothing can still be holding it.
 		oldest := sc.shadowQueue[0]
 		sc.shadowQueue = sc.shadowQueue[1:]
+		sc.retired = append(sc.retired, sc.shadows[oldest])
 		delete(sc.shadows, oldest)
 	}
 	sc.shadows[key] = t
 	sc.shadowQueue = append(sc.shadowQueue, key)
+}
+
+// collect frees the textures retired from the shadow cache. BeginFrame
+// calls it, so a texture evicted during one frame is freed at the start of
+// the next.
+func (sc *SharedCache) collect() {
+	sc.mu.Lock()
+	defer sc.mu.Unlock()
+	for _, t := range sc.retired {
+		if t.ID != 0 {
+			rl.UnloadTexture(t)
+			sc.freed++
+		}
+	}
+	sc.retired = sc.retired[:0]
 }
 
 // --- icon cache -------------------------------------------------------------

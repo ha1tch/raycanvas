@@ -57,10 +57,12 @@ func main() {
 		ctx.SetLineWidth(1)
 		ctx.BeginPath()
 		for x := float32(40); x < W; x += 40 {
-			ctx.MoveTo(x, 0); ctx.LineTo(x, H)
+			ctx.MoveTo(x, 0)
+			ctx.LineTo(x, H)
 		}
 		for y := float32(40); y < H; y += 40 {
-			ctx.MoveTo(0, y); ctx.LineTo(W, y)
+			ctx.MoveTo(0, y)
+			ctx.LineTo(W, y)
 		}
 		ctx.Stroke()
 
@@ -84,9 +86,9 @@ func main() {
 			x, y, blur, offX, offY float32
 			name                   string
 		}{
-			{50,  40, 4,        2,        4,        "resting\nblur:4 off:2,4"},
+			{50, 40, 4, 2, 4, "resting\nblur:4 off:2,4"},
 			{220, 40, animBlur, animOffX, animOffY, fmt.Sprintf("animated\nblur:%.0f off:%.0f,%.0f", animBlur, animOffX, animOffY)},
-			{390, 40, 20,       6,        12,       "lifted\nblur:20 off:6,12"},
+			{390, 40, 20, 6, 12, "lifted\nblur:20 off:6,12"},
 		}
 
 		for _, c := range cards {
@@ -153,7 +155,7 @@ func main() {
 		for i, g := range glows {
 			cx := float32(590 + i*92)
 			cy := float32(130)
-			r  := float32(34)
+			r := float32(34)
 
 			ctx.SetShadowColor(g.col)
 			ctx.SetShadowBlur(12 + glowPulse*10)
@@ -220,16 +222,16 @@ func main() {
 		ctx.SetTextBaseline("middle")
 
 		samples := []struct {
-			y    float32
-			text string
-			col  string
-			shad string
+			y      float32
+			text   string
+			col    string
+			shad   string
 			ox, oy float32
 		}{
-			{322, "No shadow — text lost in noise",        "#2d2d2d", "transparent", 0, 0},
-			{362, "Dark shadow — legible (1,2)",           "#1a1a1a", "rgba(255,255,255,0.8)", 1, 2},
-			{402, "White halo — maximum contrast",         "#1a1a1a", "rgba(255,255,255,0.95)", 0, 0},
-			{442, "Colour shadow — vivid",                 "#7232c8", "#7232c8", 2, 2},
+			{322, "No shadow — text lost in noise", "#2d2d2d", "transparent", 0, 0},
+			{362, "Dark shadow — legible (1,2)", "#1a1a1a", "rgba(255,255,255,0.8)", 1, 2},
+			{402, "White halo — maximum contrast", "#1a1a1a", "rgba(255,255,255,0.95)", 0, 0},
+			{442, "Colour shadow — vivid", "#7232c8", "#7232c8", 2, 2},
 			{482, fmt.Sprintf("Animated (%.1f, %.1f)",
 				float32(math.Sin(float64(t))*4),
 				float32(math.Cos(float64(t*0.7))*3+2)),

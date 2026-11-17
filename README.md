@@ -1,6 +1,6 @@
 # raycanvas
 
-**v0.2.4 — work in progress**
+**v0.3.1 — work in progress**
 
 A Go package that mirrors the HTML5 `CanvasRenderingContext2D` API, backed by [raylib-go](https://github.com/gen2brain/raylib-go) for GPU rendering and [fogleman/gg](https://github.com/fogleman/gg) for CPU-side precision work (blur, anti-aliased curves, clip masks).
 
@@ -10,7 +10,7 @@ The goal is to let code written against the browser canvas API port to Go with m
 
 ## Requirements
 
-- Go 1.22 or later
+- Go 1.25 or later
 - raylib system dependencies (X11/Wayland on Linux, standard on macOS/Windows)
   - Ubuntu: `apt install libwayland-dev libxkbcommon-dev libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl1-mesa-dev`
 
@@ -137,6 +137,16 @@ ctx.FillRoundRectTop(x, y, w, h, r float32)  // rounded top corners only
 ctx.StrokeRoundRectTop(x, y, w, h, r float32)
 ctx.FillCircle(x, y, r float32)
 ctx.StrokeCircle(x, y, r float32)
+
+// A colour running from the top edge to the bottom edge, alpha included
+ctx.FillRoundRectGradient(x, y, w, h, r float32, top, bottom color.RGBA)
+ctx.StrokeRoundRectGradient(x, y, w, h, r float32, top, bottom color.RGBA)
+```
+
+Rounded rectangles are stepped at the corners unless the window has multisampling (`SetupWindow` asks for 4x). In a window opened some other way, turn on the soft edge:
+
+```go
+ctx.SetAntialias(true)  // rounded fills, strokes, images and clip corners get a one-pixel soft edge
 ```
 
 ### Text
@@ -154,6 +164,12 @@ ctx.DrawImageScaled(src rl.Texture2D, dst rl.Rectangle)
 ctx.DrawImageCropped(src rl.Texture2D, srcRect, dst rl.Rectangle)
 ctx.DrawImageOffscreen(src *rc.Context, dst rl.Rectangle)
 ctx.DrawImageOffscreenCropped(src *rc.Context, srcRect, dst rl.Rectangle)
+
+// With round corners. The corners are geometry, not paint: what lies
+// behind them is left alone, whatever it is.
+ctx.DrawImageRounded(src rl.Texture2D, dst rl.Rectangle, r float32)
+ctx.DrawImageRoundedCropped(src rl.Texture2D, srcRect, dst rl.Rectangle, r float32)
+ctx.DrawImageOffscreenRounded(src *rc.Context, dst rl.Rectangle, r float32)
 
 // Off-screen context (backed by RenderTexture2D)
 offscreen := rc.NewOffscreen(width, height int32, cache *rc.SharedCache)
@@ -208,7 +224,7 @@ ctx.DrawIcon("close", x, y, 14, strokeColor)
 
 Rectangular clips use `rl.BeginScissorMode` with intersection tracking across `Save`/`Restore` levels (max observed depth: 3).
 
-Rounded-rect clips use a corner-overdraw technique: content is drawn normally inside the scissor bounding box, then four quarter-circle caps in the background colour are painted over the corners on `Restore`. This requires knowing the background colour:
+Rounded-rect clips use a corner-overdraw technique: content is drawn normally inside the scissor bounding box, then the four corners outside the rounding are painted over in the background colour on `Restore`. This requires knowing the background colour, which is taken when `Clip` is called:
 
 ```go
 ctx.SetMaskBackground("#1e1e2e")  // optional — falls back to current fillStyle
@@ -219,6 +235,8 @@ ctx.Clip()
 // ... draw clipped content ...
 ctx.Restore()  // corner caps applied here
 ```
+
+Over anything that is not one solid colour, draw the content into an off-screen context and place it with `DrawImageOffscreenRounded` instead.
 
 ---
 
@@ -258,9 +276,9 @@ Build and run any example with `make <name>`, or build all with `make build-exam
 
 ## Known issues and limitations
 
-### Path fill for complex polygons
+### Path fill: no holes, no self-crossing outlines
 
-The `Fill()` dispatch uses `DrawTriangleFan` with the polygon centroid as the fan centre. This works correctly for convex and star-convex polygons. Non-convex polygons (e.g. a star shape) will render incorrectly — some triangles will cover areas outside the intended fill. Proper ear-clipping triangulation is not yet implemented.
+`Fill()` cuts each sub-path into triangles by ear clipping, so outlines with notches (an L, a U, a star) fill correctly. A path whose sub-paths are meant as holes in one another, or an outline that crosses itself, is not filled by a winding rule as a browser would: each sub-path is filled on its own.
 
 ### roundRect clip uses corner overdraw
 
@@ -269,7 +287,7 @@ The rounded-rect clip implementation paints over the corners with the background
 - Content behind the clipped region must be a solid colour
 - Semi-transparent backgrounds produce visible corner artefacts
 
-A proper GPU-composited mask (via shader or CPU alpha blend) is the correct solution but is not yet implemented.
+The rounded image calls (`DrawImageRounded`, `DrawImageOffscreenRounded`) do not have this limit.
 
 ### Text shadow is offset-only
 
@@ -279,9 +297,13 @@ A proper GPU-composited mask (via shader or CPU alpha blend) is the correct solu
 
 The alphabetic baseline correction (`0.75 * fontSize`) is empirically tuned for Inter and Fira Code at 8–14px. At larger or smaller sizes, or with other fonts, text may sit slightly higher or lower than the equivalent browser canvas rendering.
 
-### Shadow cache eviction does not free VRAM
+### Stroke placement without the soft edge
 
-Evicted shadow textures are removed from the map but `UnloadTexture` is not called, because freeing the GPU texture ID causes raylib to reuse it immediately and stale references draw the wrong content. This is a known issue with no clean fix short of a reference-counted texture system. The cache cap is 1024 entries; shadow textures are small, so VRAM impact is minimal in practice.
+Without `SetAntialias`, `StrokeRoundRect` draws its line outside the rectangle and `StrokeRect` inside it, which are raylib's conventions; a canvas centres the line on the outline. With `SetAntialias(true)`, `StrokeRoundRect` is centred.
+
+### No rotation
+
+`SetTransform` accepts a full matrix, but rectangles, images, clips and shadows read only its scale and translation.
 
 ### No gradient or pattern support
 
@@ -302,6 +324,8 @@ Evicted shadow textures are removed from the map but `UnloadTexture` is not call
 | `github.com/srwiley/oksvg` | SVG path parsing for icon rasterisation |
 | `github.com/srwiley/rasterx` | SVG rasterisation backend |
 
+All four are pure Go apart from raylib itself. They come with the package whether or not the importing program uses shadows or icons.
+
 ---
 
 ## Build system
@@ -312,6 +336,8 @@ make build           — type-check the library
 make build-examples  — compile all examples to bin/
 make basic           — build and run the basic example
 make zui             — build and run the ZUI example
+make test            — run the tests (the drawing ones need a display)
+make fmt-check       — fail if any file is not gofmt-clean
 make release V=0.3.0 — cut a versioned release (checks CHANGELOG)
 make patch V=0.2.2-patched01 — checkpoint zip, no CHANGELOG check
 make package         — quick zip of current state

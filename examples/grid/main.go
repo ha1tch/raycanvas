@@ -11,9 +11,10 @@
 // structure of joxel's draw() function.
 //
 // Controls:
-//   scroll  — mouse wheel
-//   zoom    — Ctrl + wheel  (or +/- keys)
-//   select  — click a cell
+//
+//	scroll  — mouse wheel
+//	zoom    — Ctrl + wheel  (or +/- keys)
+//	select  — click a cell
 package main
 
 import (
@@ -28,8 +29,8 @@ import (
 const (
 	W       = 960
 	H       = 640
-	HDR_W   = 48  // row header width
-	HDR_H   = 24  // column header height
+	HDR_W   = 48 // row header width
+	HDR_H   = 24 // column header height
 	numCols = 12
 	numRows = 40
 )
@@ -43,7 +44,7 @@ const (
 // Theme colours (catppuccin mocha — same palette as joxel's dark theme).
 var T = struct {
 	bg, cellBg, gridLine, headerBg, headerTxt string
-	selFill, selStroke, accent, txt            string
+	selFill, selStroke, accent, txt           string
 }{
 	bg:        "#1e1e2e",
 	cellBg:    "#181825",

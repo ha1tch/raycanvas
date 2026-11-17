@@ -7,9 +7,9 @@ import (
 	"image/color"
 	"image/draw"
 
+	rl "github.com/gen2brain/raylib-go/raylib"
 	"github.com/srwiley/oksvg"
 	"github.com/srwiley/rasterx"
-	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
 // RegisterIcon parses an SVG and rasterises it at the given size, storing

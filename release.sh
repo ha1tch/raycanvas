@@ -70,7 +70,9 @@ echo "$VERSION_ARG" > VERSION
 echo "    VERSION: $VERSION_ARG ✓"
 
 # ── Step 2b: Update README version line ──────────────────────────────────────
-sed -i "s/\*\*v[0-9][0-9.]*[^*]* — work in progress\*\*/**v${VERSION_ARG} — work in progress**/" README.md
+# (written to a copy and moved back: "sed -i" is spelt differently on macOS)
+sed "s/\*\*v[0-9][0-9.]*[^*]* — work in progress\*\*/**v${VERSION_ARG} — work in progress**/" README.md > README.md.new
+mv README.md.new README.md
 echo "    README.md version: $VERSION_ARG ✓"
 
 # ── Step 3: Update pkg/version/version.go ────────────────────────────────────
@@ -91,7 +93,7 @@ echo "    pkg/version/version.go: $VERSION_ARG ✓"
 # ── Step 4: Consistency check ─────────────────────────────────────────────────
 # Read back and verify all three sources agree.
 FILE_VERSION="$(cat VERSION | tr -d '[:space:]')"
-GO_VERSION="$(grep 'const Version' pkg/version/version.go | grep -oP '"[^"]+"' | tr -d '"')"
+GO_VERSION="$(grep 'const Version' pkg/version/version.go | cut -d'"' -f2)"
 
 if [[ "$FILE_VERSION" != "$VERSION_ARG" ]]; then
   echo "Error: VERSION file mismatch: got '$FILE_VERSION'" >&2
@@ -133,7 +135,7 @@ STAGE="$TMP_DIR/$ZIP_DIR"
 mkdir -p "$STAGE"
 
 # Library root
-cp VERSION CHANGELOG.md ARCHITECTURE.md README.md Makefile release.sh package.sh \
+cp VERSION CHANGELOG.md README.md LICENSE .gitignore Makefile release.sh package.sh \
    go.mod go.sum \
    "$STAGE/"
 
@@ -141,6 +143,9 @@ cp VERSION CHANGELOG.md ARCHITECTURE.md README.md Makefile release.sh package.sh
 if [ -d images ]; then
   cp -r images "$STAGE/images"
 fi
+
+# Documentation
+cp -r docs "$STAGE/docs"
 
 # Library source
 cp *.go "$STAGE/"
@@ -156,6 +161,10 @@ cp fonts/fonts.go "$STAGE/fonts/"
 cp fonts/go.mod   "$STAGE/fonts/"
 [[ -f fonts/go.sum ]] && cp fonts/go.sum "$STAGE/fonts/" || true
 cp fonts/*.ttf    "$STAGE/fonts/"
+
+# The examples' own copy of the fonts
+mkdir -p "$STAGE/examples"
+cp -r examples/internal "$STAGE/examples/internal"
 
 # Example binaries
 for ex in examples/*/; do

@@ -21,6 +21,18 @@ type clipState struct {
 	// Zero value (ID==0) means no mask is active.
 	maskTex rl.Texture2D
 	hasMask bool
+
+	// rounds lists the rounded clips open at this level, outermost first.
+	// Restore closes the ones the restored level does not have.
+	rounds []roundClip
+}
+
+// roundClip is one rounded clip, fixed when Clip is called: its rectangle
+// and radius in screen space, and the colour its corners are painted with.
+type roundClip struct {
+	rect rl.Rectangle
+	r    float32
+	bg   color.RGBA
 }
 
 // noClip returns a clipState that allows the full canvas.
@@ -77,8 +89,14 @@ func (cs clipState) applyScissor() {
 //
 // Implementation dispatch:
 //   - If the current path is a single axis-aligned rect: scissor mode.
-//   - If the current path is a roundRect: scissor mode for the bounding box
-//     + gg alpha-mask texture for the rounded shape.
+//   - If the current path is a roundRect: scissor mode for the bounding box,
+//     and when the clip is closed by Restore the four corners are painted
+//     over in a background colour. This only looks like a rounded clip over
+//     a solid colour: the mask background (SetMaskBackground) or, failing
+//     that, the fill style in force when Clip is called. Over anything else
+//     (a picture, a gradient, another window's content) draw the content
+//     to an off-screen Context and place it with DrawImageOffscreenRounded,
+//     or use DrawImageRounded for a texture: those round the geometry itself.
 //   - All other paths: bounding-box scissor only (sufficient for shevo).
 func (c *Context) Clip() {
 	switch c.path.clipShape() {
@@ -95,8 +113,17 @@ func (c *Context) Clip() {
 		r = c.transformRect(r)
 		c.state.clip = c.state.clip.intersectScissor(r)
 		c.state.clip.applyScissor()
-		// Store the roundRect geometry for corner overdraw on Restore().
-		c.maskedRR = rr
+		// Fix the geometry and the corner colour now: by the time Restore
+		// runs, the transform and the fill style belong to the content.
+		m := c.state.transform
+		sx, sy := m.transformPoint(rr.x, rr.y)
+		rounds := make([]roundClip, len(c.state.clip.rounds), len(c.state.clip.rounds)+1)
+		copy(rounds, c.state.clip.rounds)
+		c.state.clip.rounds = append(rounds, roundClip{
+			rect: rl.Rectangle{X: sx, Y: sy, Width: rr.w * m.a, Height: rr.h * m.d},
+			r:    rr.r * m.a,
+			bg:   c.autoMaskBackground(),
+		})
 		c.state.clip.hasMask = true
 
 	default:
@@ -109,69 +136,73 @@ func (c *Context) Clip() {
 	c.path.reset()
 }
 
-// applyRoundRectCornerOverdraw draws four small filled rounded-corner "caps"
-// using the background colour over the corners of the clipped region, creating
-// the visual effect of a rounded clip without GPU readback or nested RTs.
+// closeRoundClip paints the four corners of a rounded clip in its background
+// colour: for each corner, the part of the corner square that lies outside
+// the quarter circle. Restore calls it while the clip's scissor is still in
+// force, after the clipped content has been drawn.
 //
-// This is called from Restore() when hasMask was true. It requires knowing the
-// background colour — callers set c.maskBgColor before the clip.
-//
-// The technique: after all clipped content is drawn inside the scissor rect,
-// we draw four quarter-circle "masks" in the background colour at each corner.
-// Each cap is drawn as a filled circle sector positioned at the corner centre,
-// covering only the pixels outside the rounded rect border.
-func (c *Context) applyRoundRectCornerOverdrawBg(sc color.RGBA) {
-	rr := c.maskedRR
-	m := c.state.transform
-
-	x, y, w, h, r := rr.x, rr.y, rr.w, rr.h, rr.r
-	sr := r * m.a
-
-	// Transform corners to screen space.
-	sx, sy := m.transformPoint(x, y)
-	// sw, sh := w*m.a, h*m.d  // not needed directly
-
-	_ = w
-	_ = h
-
-	// Each corner: draw a solid square the size of the radius, then
-	// punch the rounded corner back in using a filled circle in bg colour.
-	// Top-left
-	c.drawCornerCap(sx+sr, sy+sr, sr, 180, 270, sc)
-	// Top-right
-	c.drawCornerCap(sx+w*m.a-sr, sy+sr, sr, 270, 360, sc)
-	// Bottom-right
-	c.drawCornerCap(sx+w*m.a-sr, sy+h*m.d-sr, sr, 0, 90, sc)
-	// Bottom-left
-	c.drawCornerCap(sx+sr, sy+h*m.d-sr, sr, 90, 180, sc)
-}
-
-// drawCornerCap paints a corner overdraw cap:
-// fills the corner square with bgCol, then draws a filled arc in bgCol
-// to restore the rounded cutout.
-func (c *Context) drawCornerCap(cx, cy, r, startDeg, endDeg float32, bgCol color.RGBA) {
-	// The square corner fill
-	var rx, ry float32
-	switch {
-	case startDeg == 180: // top-left: square is to the left and above
-		rx, ry = cx-r, cy-r
-	case startDeg == 270: // top-right: square is to the right and above
-		rx, ry = cx, cy-r
-	case startDeg == 0: // bottom-right: square is to the right and below
-		rx, ry = cx, cy
-	default: // bottom-left: square is to the left and below
-		rx, ry = cx-r, cy
+// With antialiasing on, the painted edge is a soft band, so the clipped
+// content meets the background smoothly.
+func (c *Context) closeRoundClip(rc roundClip) {
+	half := minF32(rc.rect.Width, rc.rect.Height) / 2
+	r := rc.r
+	if r > half {
+		r = half
 	}
-	rl.DrawRectangleRec(rl.Rectangle{X: rx, Y: ry, Width: r, Height: r}, bgCol)
-	// Re-carve the rounded corner: draw the filled arc (the part that should
-	// remain transparent/background) — this IS the background colour circle sector.
-	rl.DrawCircleSector(
-		rl.Vector2{X: cx, Y: cy},
-		r,
-		startDeg, endDeg,
-		16,
-		bgCol,
-	)
+	if r <= 0 {
+		return
+	}
+	seg := cornerSegments(r)
+	// A pixel beyond the rectangle, so the soft edge has no gap at the ends
+	// of each arc; the scissor trims it.
+	out := rl.Rectangle{X: rc.rect.X - 1, Y: rc.rect.Y - 1, Width: rc.rect.Width + 2, Height: rc.rect.Height + 2}
+	corners := [4]rl.Vector2{
+		{X: out.X, Y: out.Y},
+		{X: out.X + out.Width, Y: out.Y},
+		{X: out.X + out.Width, Y: out.Y + out.Height},
+		{X: out.X, Y: out.Y + out.Height},
+	}
+	solid, soft := float32(0), float32(0)
+	if c.antialias {
+		solid, soft = feather/2.0, -feather/2.0
+	}
+	edge := roundRectOutline(rc.rect, r, solid, seg)
+	var inner []rl.Vector2
+	if c.antialias {
+		inner = roundRectOutline(rc.rect, r, soft, seg)
+	}
+	p := meshPaint{col: rc.bg}
+	p.begin()
+	for k := 0; k < 4; k++ {
+		arc := edge[k*(seg+1) : (k+1)*(seg+1)]
+		// Square off the arc's ends onto the enlarged rectangle.
+		first, last := arc[0], arc[seg]
+		switch k {
+		case 0:
+			first.X, last.Y = out.X, out.Y
+		case 1:
+			first.Y, last.X = out.Y, out.X+out.Width
+		case 2:
+			first.X, last.Y = out.X+out.Width, out.Y+out.Height
+		case 3:
+			first.Y, last.X = out.Y+out.Height, out.X
+		}
+		p.vertex(corners[k], 1)
+		p.vertex(first, 1)
+		p.vertex(arc[0], 1)
+		for i := 0; i < seg; i++ {
+			p.vertex(corners[k], 1)
+			p.vertex(arc[i], 1)
+			p.vertex(arc[i+1], 1)
+		}
+		p.vertex(corners[k], 1)
+		p.vertex(arc[seg], 1)
+		p.vertex(last, 1)
+		if c.antialias {
+			meshBand(p, inner[k*(seg+1):(k+1)*(seg+1)], arc, 0, 1, false)
+		}
+	}
+	p.end()
 }
 
 // transformRect applies the current transform to an axis-aligned rectangle,
@@ -205,4 +236,3 @@ func maxF32(a, b float32) float32 {
 	}
 	return b
 }
-

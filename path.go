@@ -18,12 +18,12 @@ type segKind uint8
 const (
 	segMove segKind = iota
 	segLine
-	segArc        // ctx.arc(x, y, r, start, end, ccw)
-	segArcTo      // ctx.arcTo(x1, y1, x2, y2, r)
-	segBezierTo   // ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x, y)
+	segArc      // ctx.arc(x, y, r, start, end, ccw)
+	segArcTo    // ctx.arcTo(x1, y1, x2, y2, r)
+	segBezierTo // ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x, y)
 	segClose
-	segRect       // ctx.rect(x, y, w, h)
-	segRoundRect  // ctx.roundRect(x, y, w, h, r)
+	segRect      // ctx.rect(x, y, w, h)
+	segRoundRect // ctx.roundRect(x, y, w, h, r)
 )
 
 type pathSegment struct {
@@ -31,8 +31,8 @@ type pathSegment struct {
 	// General-purpose coordinate fields.
 	// Meaning depends on kind — see comments per case in path methods.
 	x, y, x2, y2, x3, y3 float32
-	r                      float32
-	anticlockwise          bool
+	r                    float32
+	anticlockwise        bool
 }
 
 // pathBuffer accumulates path segments between BeginPath and Fill/Stroke/Clip.
@@ -110,7 +110,7 @@ func (c *Context) ArcTo(x1, y1, x2, y2, r float32) {
 func (c *Context) BezierCurveTo(cp1x, cp1y, cp2x, cp2y, x, y float32) {
 	c.path.segs = append(c.path.segs, pathSegment{
 		kind: segBezierTo,
-		x: cp1x, y: cp1y,
+		x:    cp1x, y: cp1y,
 		x2: cp2x, y2: cp2y,
 		x3: x, y3: y,
 	})
@@ -123,7 +123,7 @@ func (c *Context) BezierCurveTo(cp1x, cp1y, cp2x, cp2y, x, y float32) {
 func (c *Context) Rect(x, y, w, h float32) {
 	c.path.segs = append(c.path.segs, pathSegment{
 		kind: segRect,
-		x: x, y: y, x2: w, y2: h,
+		x:    x, y: y, x2: w, y2: h,
 	})
 	c.path.hasPath = true
 }
@@ -135,7 +135,7 @@ func (c *Context) Rect(x, y, w, h float32) {
 func (c *Context) RoundRect(x, y, w, h, r float32) {
 	c.path.segs = append(c.path.segs, pathSegment{
 		kind: segRoundRect,
-		x: x, y: y, x2: w, y2: h,
+		x:    x, y: y, x2: w, y2: h,
 		r: r,
 	})
 	c.path.hasPath = true
@@ -146,7 +146,7 @@ func (c *Context) RoundRect(x, y, w, h, r float32) {
 type clipShape int
 
 const (
-	clipShapeOther     clipShape = iota
+	clipShapeOther clipShape = iota
 	clipShapeRect
 	clipShapeRoundRect
 )
@@ -250,9 +250,18 @@ func (c *Context) tessellate() [][]rl.Vector2 {
 	var cur []rl.Vector2
 	m := c.state.transform
 
+	// The current point in user space: where the last segment ended. Curves
+	// and ArcTo start from it. It is followed here, segment by segment,
+	// because the path buffer's own curX/curY only hold where the whole
+	// path ends.
+	var px, py float32
+	// Where the current sub-path began; ClosePath returns there.
+	var sx, sy float32
+
 	add := func(x, y float32) {
 		tx, ty := m.transformPoint(x, y)
 		cur = append(cur, rl.Vector2{X: tx, Y: ty})
+		px, py = x, y
 	}
 	flush := func() {
 		if len(cur) > 0 {
@@ -265,18 +274,19 @@ func (c *Context) tessellate() [][]rl.Vector2 {
 		switch s.kind {
 		case segMove:
 			flush() // end previous sub-path at every MoveTo
-			tx, ty := m.transformPoint(s.x, s.y)
-			cur = append(cur, rl.Vector2{X: tx, Y: ty})
-
-		case segLine:
 			add(s.x, s.y)
-
+			sx, sy = s.x, s.y
+		case segLine:
+			if len(cur) == 0 {
+				sx, sy = s.x, s.y
+			}
+			add(s.x, s.y)
 		case segClose:
 			if len(cur) > 0 {
 				cur = append(cur, cur[0]) // close by repeating first point
+				px, py = sx, sy
 			}
 			flush()
-
 		case segRect:
 			flush()
 			add(s.x, s.y)
@@ -285,37 +295,31 @@ func (c *Context) tessellate() [][]rl.Vector2 {
 			add(s.x, s.y+s.y2)
 			add(s.x, s.y)
 			flush()
-
 		case segRoundRect:
 			flush()
 			cur = append(cur, tessellateRoundRect(s.x, s.y, s.x2, s.y2, s.r, m)...)
 			flush()
-
+			px, py = s.x, s.y
 		case segArc:
 			// Arc without a preceding MoveTo starts a new sub-path.
 			if len(cur) == 0 {
 				flush()
+				sx = s.x + s.r*float32(math.Cos(float64(s.x2)))
+				sy = s.y + s.r*float32(math.Sin(float64(s.x2)))
 			}
 			cur = append(cur, tessellateArc(s.x, s.y, s.r, s.x2, s.y2, s.anticlockwise, m)...)
-
+			px = s.x + s.r*float32(math.Cos(float64(s.y2)))
+			py = s.y + s.r*float32(math.Sin(float64(s.y2)))
 		case segArcTo:
-			var px, py float32
-			if len(cur) > 0 {
-				last := cur[len(cur)-1]
-				px = (last.X - m.e) / m.a
-				py = (last.Y - m.f) / m.d
+			for _, p := range tessellateArcTo(px, py, s.x, s.y, s.x2, s.y2, s.r) {
+				add(p[0], p[1])
 			}
-			arcPts := tessellateArcTo(px, py, s.x, s.y, s.x2, s.y2, s.r)
-			for _, p := range arcPts {
-				tx, ty := m.transformPoint(p[0], p[1])
-				cur = append(cur, rl.Vector2{X: tx, Y: ty})
-			}
-
 		case segBezierTo:
 			cur = append(cur, tessellateCubicBezier(
-				c.path.curX, c.path.curY,
+				px, py,
 				s.x, s.y, s.x2, s.y2, s.x3, s.y3, m,
 			)...)
+			px, py = s.x3, s.y3
 		}
 	}
 	flush()
@@ -385,58 +389,49 @@ func tessellateRoundRect(x, y, w, h, r float32, m matrix3x2) []rl.Vector2 {
 // tessellateArcTo computes the arc-to geometry.
 // Returns local-space [x,y] pairs (not yet transformed).
 func tessellateArcTo(px, py, x1, y1, x2, y2, r float32) [][2]float32 {
-	// Standard arcTo algorithm: compute tangent points, then arc.
-	// Vector from current point to first control.
-	d1x, d1y := x1-px, y1-py
-	d2x, d2y := x2-x1, y2-y1
+	// The corner is at (x1,y1). v1 points from it back along the incoming
+	// leg, v2 forward along the outgoing one.
+	v1x, v1y := px-x1, py-y1
+	v2x, v2y := x2-x1, y2-y1
 
-	len1 := float32(math.Sqrt(float64(d1x*d1x + d1y*d1y)))
-	len2 := float32(math.Sqrt(float64(d2x*d2x + d2y*d2y)))
+	len1 := float32(math.Sqrt(float64(v1x*v1x + v1y*v1y)))
+	len2 := float32(math.Sqrt(float64(v2x*v2x + v2y*v2y)))
 	if len1 < 1e-6 || len2 < 1e-6 || r < 1e-6 {
 		return [][2]float32{{x1, y1}}
 	}
+	v1x, v1y = v1x/len1, v1y/len1
+	v2x, v2y = v2x/len2, v2y/len2
 
-	// Normalise
-	d1x, d1y = d1x/len1, d1y/len1
-	d2x, d2y = d2x/len2, d2y/len2
-
-	// Angle between the two directions
-	cosAngle := d1x*d2x + d1y*d2y
-	if cosAngle >= 1.0 {
+	// The angle between the legs, measured at the corner. When the three
+	// points lie on one line there is no corner to round.
+	cosA := float64(v1x*v2x + v1y*v2y)
+	if cosA > 1-1e-6 || cosA < -1+1e-6 {
 		return [][2]float32{{x1, y1}}
 	}
-	sinAngle := float32(math.Sqrt(float64(1 - cosAngle*cosAngle)))
-	if sinAngle < 1e-6 {
-		return [][2]float32{{x1, y1}}
+	half := math.Acos(cosA) / 2
+
+	// The circle touches each leg this far from the corner, and its centre
+	// lies on the bisector of the legs.
+	tanLen := r / float32(math.Tan(half))
+	t1x, t1y := x1+v1x*tanLen, y1+v1y*tanLen
+	t2x, t2y := x1+v2x*tanLen, y1+v2y*tanLen
+
+	bx, by := v1x+v2x, v1y+v2y
+	blen := float32(math.Sqrt(float64(bx*bx + by*by)))
+	dist := r / float32(math.Sin(half))
+	cx, cy := x1+bx/blen*dist, y1+by/blen*dist
+
+	startAngle := math.Atan2(float64(t1y-cy), float64(t1x-cx))
+	endAngle := math.Atan2(float64(t2y-cy), float64(t2x-cx))
+
+	// The arc between the tangent points is the short one: under half a turn.
+	sweep := endAngle - startAngle
+	for sweep > math.Pi {
+		sweep -= 2 * math.Pi
 	}
-
-	// Distance from control point to tangent points
-	tanLen := r * (1 + cosAngle) / sinAngle
-	if tanLen < 0 {
-		tanLen = -tanLen
+	for sweep < -math.Pi {
+		sweep += 2 * math.Pi
 	}
-
-	// Tangent points
-	t1x := x1 - d1x*tanLen
-	t1y := y1 - d1y*tanLen
-	t2x := x1 + d2x*tanLen
-	t2y := y1 + d2y*tanLen
-
-	// Arc centre: perpendicular to d1 at t1
-	perpX := -d1y
-	perpY := d1x
-	// Determine which side the centre is on
-	cross := d1x*d2y - d1y*d2x
-	if cross > 0 {
-		perpX, perpY = -perpX, -perpY
-	}
-	cx := t1x + perpX*r
-	cy := t1y + perpY*r
-
-	// Start and end angles
-	startAngle := float32(math.Atan2(float64(t1y-cy), float64(t1x-cx)))
-	endAngle := float32(math.Atan2(float64(t2y-cy), float64(t2x-cx)))
-	ccw := cross > 0
 
 	steps := TessellationSteps / 4
 	if steps < 4 {
@@ -444,21 +439,14 @@ func tessellateArcTo(px, py, x1, y1, x2, y2, r float32) [][2]float32 {
 	}
 	pts := make([][2]float32, 0, steps+2)
 	pts = append(pts, [2]float32{t1x, t1y})
-
-	sweep := endAngle - startAngle
-	if !ccw && sweep > 0 {
-		sweep -= 2 * math.Pi
-	}
-	if ccw && sweep < 0 {
-		sweep += 2 * math.Pi
-	}
-	for i := 1; i <= steps; i++ {
-		t := startAngle + sweep*float32(i)/float32(steps)
+	for i := 1; i < steps; i++ {
+		t := startAngle + sweep*float64(i)/float64(steps)
 		pts = append(pts, [2]float32{
-			cx + r*float32(math.Cos(float64(t))),
-			cy + r*float32(math.Sin(float64(t))),
+			cx + r*float32(math.Cos(t)),
+			cy + r*float32(math.Sin(t)),
 		})
 	}
+	pts = append(pts, [2]float32{t2x, t2y})
 	return pts
 }
 

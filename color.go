@@ -91,7 +91,7 @@ func parseHex(s string) color.RGBA {
 
 // parseRGBA handles "rgba(r, g, b, a)" where a is 0.0–1.0.
 func parseRGBA(s string) color.RGBA {
-	inner := strings.TrimSuffix(strings.TrimPrefix(strings.TrimSpace(s), "rgba("), ")")
+	inner := strings.TrimSuffix(strings.TrimPrefix(strings.ToLower(strings.TrimSpace(s)), "rgba("), ")")
 	parts := splitComma(inner)
 	if len(parts) != 4 {
 		return color.RGBA{A: 255}
@@ -111,7 +111,7 @@ func parseRGBA(s string) color.RGBA {
 
 // parseRGB handles "rgb(r, g, b)".
 func parseRGB(s string) color.RGBA {
-	inner := strings.TrimSuffix(strings.TrimPrefix(strings.TrimSpace(s), "rgb("), ")")
+	inner := strings.TrimSuffix(strings.TrimPrefix(strings.ToLower(strings.TrimSpace(s)), "rgb("), ")")
 	parts := splitComma(inner)
 	if len(parts) != 3 {
 		return color.RGBA{A: 255}

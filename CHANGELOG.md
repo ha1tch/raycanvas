@@ -3,6 +3,55 @@
 All notable changes to this project are documented here.
 The top entry always matches the VERSION file and pkg/version/version.go.
 
+## 0.3.1 — 2026-11-17
+
+### Added
+
+- **Vertical gradients on rounded rectangles** (`mesh.go`): `FillRoundRectGradient` and `StrokeRoundRectGradient` take a colour for the top edge and one for the bottom and run between them, alpha included, so a panel can be see-through at the top and solid at the bottom. The colour is set per vertex and a triangle interpolates it, which is exact for a gradient that is linear in height; no texture and no shader. Both honour `globalAlpha` and `SetAntialias`. They are not the canvas API's `createLinearGradient`, which is still not implemented.
+
+---
+
+## 0.3.0 — 2026-11-17
+
+A hardening release. The library had no tests; it now has a suite that
+renders under a real OpenGL context and reads the pixels back, and the
+defects that suite found are fixed.
+
+### Added
+
+- **Rounded images** (`mesh.go`): `DrawImageRounded`, `DrawImageRoundedCropped` and `DrawImageOffscreenRounded` draw a texture with round corners. The corners are part of the geometry, so nothing is painted outside them and the image may lie over anything. This is the answer to the long-standing limit of the rounded clip, which only works over a solid colour.
+- **Soft edges** (`SetAntialias`): rounded rectangles, rounded strokes, rounded images and the corners of a rounded clip get a one-pixel edge whose alpha falls away, which is smooth in a window opened without multisampling. Off by default: with it off, drawing is what it was in 0.2.4. With it on, `StrokeRoundRect` is centred on the outline as a canvas stroke is.
+- **Colour values**: `SetFillColor`, `SetStrokeColor` and `SetMaskBackgroundColor` take a `color.RGBA`, for callers that hold colours rather than CSS strings.
+- **Tests** (`gl_test.go`, `render_test.go`, `pure_test.go`): 27 tests (29 since 0.3.1). Those that draw need a display and are skipped without one (`RAYCANVAS_TEST_NOGL=1` forces that); `make test` runs them.
+- `LICENSE` (Apache 2.0, as the README has always stated), `make test`, `make fmt-check`.
+
+### Fixed
+
+- **`ArcTo` drew loops instead of corners** (`path.go`): the arc's centre was placed on the wrong side of the corner and the tangent distance was the reciprocal of the right one for any corner that is not a right angle. `StrokeRoundRectTop` and every rounded polygon built with `ArcTo` were affected. Rewritten from the geometry: tangent points at `r / tan(half the angle between the legs)`, centre on the bisector, the short arc between them.
+- **A Bézier curve in a longer path started from the wrong point** (`path.go`): tessellation took the curve's start from where the whole path ended, not from where the previous segment ended, so `MoveTo, BezierCurveTo, LineTo` drew the curve from the end of the line. The single-curve stroke was not affected. Tessellation now follows the current point segment by segment; `ArcTo` uses it too, in place of an inverse transform that assumed no rotation.
+- **A rounded clip cut square notches, not round corners** (`clip.go`): the corner cap filled the whole corner square in the background colour. It now fills only the part of the square outside the quarter circle.
+- **A rounded clip took its colour and position at `Restore`** (`clip.go`, `context.go`): by then the fill style and the transform were the content's, so the corners were painted in the content's last colour unless `SetMaskBackground` had been called, and in the wrong place if the content had moved the origin. Both are now fixed when `Clip` is called. Nested rounded clips each close once, at their own level; before, one geometry was shared by all levels.
+- **`DrawImage*` ignored `globalAlpha`** (`image.go`).
+- **Fill of an outline with notches** (`draw.go`, `triangulate.go`): a fan from the average of the points covered the gap of a U and joined separate shapes in one path. Each sub-path is now cut into triangles by ear clipping.
+- **Evicted cache textures were never freed** (`cache.go`): shadow and Bézier textures evicted from the cache, or replaced under the same key, stayed on the GPU for the life of the program; an animated curve or shadow leaked one per frame once the cache was full. They are now freed at the start of the next frame, which avoids the reuse-of-ID problem that the old code avoided by never freeing.
+- **Upper-case `RGB(...)` / `RGBA(...)`** lost its first component (`color.go`).
+- **Dashed stroke through a repeated point** divided by zero (`draw.go`); harmless as it happened, now skipped.
+- The tree is gofmt-clean, which it was not.
+
+### Changed
+
+- `go` directive 1.22 → 1.25. Indirect dependencies from 2021 brought up to date: `golang.org/x/image` v0.45.0, `golang.org/x/net` v0.58.0, `golang.org/x/text` v0.41.0 (the newest that still build with Go 1.25).
+
+### Known limits, unchanged
+
+- A rounded clip still needs a solid colour behind it. Use the rounded image calls otherwise.
+- Without `SetAntialias`, `StrokeRoundRect` puts the line outside the rectangle and `StrokeRect` inside it (raylib's conventions); a canvas centres both. Left alone so that existing layouts do not shift.
+- Transforms with rotation are not supported by rectangles, images, clips and shadows, which read only the scale and translation of the matrix.
+- Fills do not handle holes or outlines that cross themselves.
+- `DrawImage*` set the filter of the caller's texture on every draw, according to `SetImageSmoothingEnabled`.
+
+---
+
 ## 0.2.4 — 2026-05-20
 
 ### Fixed
